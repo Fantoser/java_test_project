@@ -1,4 +1,11 @@
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -53,6 +60,16 @@ public class App {
         gbc.gridx = 1;
         gbc.gridy = 1;
         gbc.weightx = 0.1;
+        inputBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    sendRequest(textField.getText());
+                } catch (IOException | InterruptedException e1) {
+                    e1.printStackTrace();
+                }
+            } 
+          });
         panel.add(inputBtn, gbc);
         
         gbc.insets = new Insets(5, 30, 5, 30);
@@ -100,6 +117,25 @@ public class App {
         writeText(text);
     }
 
+    private static void sendRequest(String URL) throws IOException, InterruptedException {
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(URL)).build();
+        
+        writeText("Sending request...");
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        //HANDLING RESPONE CODES
+        switch (response.statusCode()) {
+            case 200:
+                writeLine("OK");
+                break;
+        }
+
+        writeLine(response.body());
+
+    }
+    
     public static void main(String[] args) throws Exception {
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {

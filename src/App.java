@@ -21,9 +21,9 @@ public class App {
      JLabel fieldLabel = new JLabel("URL");
      JTextField textField = new JTextField("https://jsonplaceholder.typicode.com/users");
      JButton inputBtn = new JButton("Bevitel");
-     JTextArea textArea = new JTextArea(8, 20);
-     JScrollPane areaScrollPane = new JScrollPane(textArea);
-     JScrollBar scrollBar = areaScrollPane.getVerticalScrollBar();
+     static JTextArea textArea = new JTextArea(8, 20);
+     static JScrollPane areaScrollPane = new JScrollPane(textArea);
+     static JScrollBar scrollBar = areaScrollPane.getVerticalScrollBar();
 
      public App() {
 
@@ -76,6 +76,30 @@ public class App {
 
      }
      
+     public static JTextArea getTextArea() {
+        return textArea;
+    }
+
+    public static JScrollBar getScrollBar() {
+        return scrollBar;
+    }
+
+    public static JScrollPane getAreaScrollPane() {
+        return areaScrollPane;
+    }
+
+    private static void writeText(String text) {
+        getTextArea().append(text);
+        getAreaScrollPane().validate();
+        getScrollBar().setValue(scrollBar.getMaximum());
+
+    }
+
+    private static void writeLine(String text) {
+        getTextArea().append("\n");
+        writeText(text);
+    }
+
     public static void main(String[] args) throws Exception {
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {

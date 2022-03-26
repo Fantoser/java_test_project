@@ -5,6 +5,7 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -17,10 +18,12 @@ import java.net.http.HttpResponse;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,13 +47,14 @@ public class App {
      static HashMap<String, String> userMap = new HashMap<String, String>();
      static HashMap<String, String> addressMap = new HashMap<String, String>();
      static HashMap<String, String> companyMap = new HashMap<String, String>();
+     public static String DBname = "test_project_db";
  
      //INITIALIZATION OF GUI ELEMENTS
      JFrame frame = new JFrame("Java Test Project");
      JPanel panel = new JPanel();
      JLabel fieldLabel = new JLabel("URL");
-     JTextField textField = new JTextField("https://jsonplaceholder.typicode.com/users");
-     JButton inputBtn = new JButton("Bevitel");
+     JLabel textLabel = new JLabel("https://jsonplaceholder.typicode.com/users");
+     JButton inputBtn = new JButton("Send request");
      static JTextArea textArea = new JTextArea(8, 20);
      static JScrollPane areaScrollPane = new JScrollPane(textArea);
      static JScrollBar scrollBar = areaScrollPane.getVerticalScrollBar();
@@ -71,10 +75,10 @@ public class App {
         gbc.weighty = 0;
         panel.add(fieldLabel);
 
-        //INPUT FIELD
+        //TEXTLABEL
         gbc.gridx = 0;
         gbc.gridy = 1;
-        panel.add(textField, gbc);
+        panel.add(textLabel, gbc);
         
 
         gbc.insets = new Insets(5, 5, 5, 30);
@@ -86,9 +90,9 @@ public class App {
         inputBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                writeText("Sending request...");
+                writeLine("Sending request...");
                 try {
-                    sendRequest(textField.getText());
+                    sendRequest(textLabel.getText());
                 } catch (IOException | InterruptedException e1) {
                     e1.printStackTrace();
                 }
@@ -148,14 +152,64 @@ public class App {
         client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
                     .thenApply(App::parsed);
-                    //.join();
         
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-        System.out.println(response.body());
         
 
         //HANDLING RESPONE CODES
+        switch (response.statusCode()) {
+            case 200:
+                writeLine("200 - OK");
+                break;
+            case 203:
+                writeLine("203 - Non-Authoritative Information");
+                break;
+            case 204:
+                writeLine("204 - No Content");
+                break;
+            case 400:
+                writeLine("400 - Bad Request");
+                break;
+            case 401:
+                writeLine("401 - Unauthorized");
+                break;
+            case 403:
+                writeLine("403 - Forbidden");
+                break;
+            case 404:
+                writeLine("404 - Not found");
+                break;
+            case 405:
+                writeLine("405 - Method Not Allowed");
+                break;
+            case 406:
+                writeLine("406 - Not Acceptable");
+                break;
+            case 407:
+                writeLine("407 - Proxy Authentication Required");
+                break;
+            case 408:
+                writeLine("408 - Request Timeout");
+                break;
+            case 412:
+                writeLine("412 - Precondition Failed");
+                break;
+            case 500:
+                writeLine("500 - Internal Server Error");
+                break;
+            case 502:
+                writeLine("502 - Bad Gateway");
+                break;
+            case 503:
+                writeLine("503 - Service Unavailable");
+                break;
+            case 504:
+                writeLine("504 - Gateway Timeout");
+                break;
+            case 505:
+                writeLine("505 - HTTP Version Not Supported");
+                break;
+        }
 
     }
 
@@ -180,6 +234,7 @@ public class App {
                 }
             }
             dbInsert();
+            writeLine(String.format("%s inserted into the database", user.get("name")));
         }
         return "Finished";
     }
@@ -216,23 +271,23 @@ public class App {
     
     private static void dbInsert() {
 
-        String jdbcURL = "jdbc:postgresql://localhost:5432/test";
+        String URL = "jdbc:postgresql://localhost:5432/" + DBname;
         String username = "postgres";
         String password = "12345";
 
         try {
-            Connection connection = DriverManager.getConnection(jdbcURL, username, password);
+            Connection connection = DriverManager.getConnection(URL, username, password);
             String sql_user = String.format("INSERT INTO users (id, name, username, email, phone, website, addressID, companyID) " + 
                                                 "VALUES (%s, '%s','%s', '%s', '%s', '%s', %s, %s)", 
-                Integer.parseInt(userMap.get("id")), userMap.get("name").toString(), userMap.get("username"), userMap.get("email"), userMap.get("phone"), userMap.get("website"), Integer.parseInt(userMap.get("id")), Integer.parseInt(userMap.get("id")));
+                                                Integer.parseInt(userMap.get("id")), userMap.get("name").toString(), userMap.get("username"), userMap.get("email"), userMap.get("phone"), userMap.get("website"), Integer.parseInt(userMap.get("id")), Integer.parseInt(userMap.get("id")));
 
-            String sql_address = String.format("INSERT INTO address (street, suite, city, zipcode, lat, lng)" + 
-                                                "VALUES ('%s', '%s', '%s', '%s', %s, %s)",
-                addressMap.get("street"), addressMap.get("suite"), addressMap.get("city"), addressMap.get("zipcode"), addressMap.get("lat"), addressMap.get("lng"));
+            String sql_address = String.format("INSERT INTO address (id, street, suite, city, zipcode, lat, lng)" + 
+                                                "VALUES ('%s', '%s', '%s', '%s', '%s', %s, %s)",
+                                                Integer.parseInt(userMap.get("id")), addressMap.get("street"), addressMap.get("suite"), addressMap.get("city"), addressMap.get("zipcode"), addressMap.get("lat"), addressMap.get("lng"));
             
-            String sql_company = String.format("INSERT INTO company (name, catchphrase, bs)" + 
-                                                "VALUES ('%s', '%s', '%s')", 
-                companyMap.get("name"), companyMap.get("catchPhrase"), companyMap.get("bs"));
+            String sql_company = String.format("INSERT INTO company (id, name, catchphrase, bs)" + 
+                                                "VALUES ('%s', '%s', '%s', '%s')",
+                                                Integer.parseInt(userMap.get("id")), companyMap.get("name"), companyMap.get("catchPhrase"), companyMap.get("bs"));
 
             Statement statement = connection.createStatement();
 
@@ -242,19 +297,134 @@ public class App {
 
             connection.close();
         } catch (SQLException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
     }
+
+    private static void createDatabase() throws SQLException {
+
+        Properties prop = new Properties();
+
+		try {
+            prop.load(new FileInputStream("data.properties"));
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+		String user = prop.getProperty("username");
+		String pass = prop.getProperty("password");
+		String port = prop.getProperty("port");
+
+        String URL = "jdbc:postgresql://localhost:" + port +"/";
+        String username = user;
+        String password = pass;
+        
+
+        Connection connection;
+
+        connection = DriverManager.getConnection(URL, username, password);
+
+        Statement stmt = connection.createStatement();
+        
+        writeText("Creating database...");
+        try {
+            stmt.execute(String.format("CREATE DATABASE %s", DBname));
+            writeLine("Database created");
+        } catch (SQLException e) {
+            writeLine("Database already exist, proceed...");
+        }
+
+        connection.close();
+
+        createTables();
+        
+    }
+
+
+    private static void createTables() throws SQLException{
+
+        Properties prop = new Properties();
+
+		try {
+            prop.load(new FileInputStream("data.properties"));
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+		String user = prop.getProperty("username");
+		String pass = prop.getProperty("password");
+		String port = prop.getProperty("port");
+
+        String URL = "jdbc:postgresql://localhost:" + port +"/" + DBname;
+        String username = user;
+        String password = pass;
+
+        Connection connection;
+
+        connection = DriverManager.getConnection(URL, username, password);
+
+        Statement stmt = connection.createStatement();
+
+        writeLine("Creating tables....");
+
+        try {
+            stmt.execute("CREATE TABLE users" +
+                            " (id INTEGER not NULL," +
+                            " name VARCHAR(255)," + 
+                            " username VARCHAR(255)," + 
+                            " email VARCHAR(255)," + 
+                            " phone VARCHAR(255)," + 
+                            " website VARCHAR(255)," + 
+                            " addressid INTEGER," + 
+                            " companyid INTEGER," + 
+                            " PRIMARY KEY ( id ))");
+
+            writeLine("Table users created");
+        } catch (SQLException e) {
+            writeLine("Table users already exist, proceed...");
+        }
+
+        try {
+            stmt.execute("CREATE TABLE address" +
+                            " (id INTEGER not NULL," +
+                            " street VARCHAR(255)," + 
+                            " suite VARCHAR(255)," + 
+                            " city VARCHAR(255)," + 
+                            " zipcode VARCHAR(255)," + 
+                            " lat INTEGER," + 
+                            " lng INTEGER," + 
+                            " PRIMARY KEY ( id ))");
+                            
+            writeLine("Table address created");
+        } catch (SQLException e) {
+            writeLine("Table address already exist, proceed...");
+        }
+
+        try {
+            stmt.execute("CREATE TABLE company" +
+                            " (id INTEGER not NULL," +
+                            " name VARCHAR(255)," + 
+                            " catchphrase VARCHAR(255)," + 
+                            " bs VARCHAR(255)," + 
+                            " PRIMARY KEY ( id ))");
+
+            writeLine("Table company created");
+        } catch (SQLException e) {
+            writeLine("Table company already exist, proceed...");
+        }
+
+        connection.close();
+
+        writeLine("Tables created");
+    }
+
     
     public static void main(String[] args) throws Exception {
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 new App();
                 try {
-                    sendRequest("https://jsonplaceholder.typicode.com/users");
-                } catch (IOException | InterruptedException e) {
+                    createDatabase();
+                } catch (SQLException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
